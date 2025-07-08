@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VPN Toggle</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            text-align: center;
+        }
+        .status {
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        .indicator {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background-color: grey;
+            margin: 20px auto;
+            transition: background-color 0.3s;
+        }
+        .vpn-off {
+            background-color: red;
+        }
+        .vpn-on {
+            background-color: green;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 1.2em;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="status">VPN status: Unknown</div>
+        <div class="indicator"></div>
+        <button id="toggle-btn" disabled>Loading...</button>
+    </div>
+
+    <script>
+        const toggleButton = document.getElementById('toggle-btn');
+        const statusText = document.querySelector('.status');
+        const indicator = document.querySelector('.indicator');
+
+        // Fetch the current VPN status when the page loads
+        window.onload = function() {
+            fetch('/vpn-status')
+                .then(response => response.json())
+                .then(data => {
+                    updateStatus(data.vpnOn);
+                    toggleButton.disabled = false;  // Enable button after the status is known
+                })
+                .catch(error => {
+                    statusText.textContent = "Error: Could not determine VPN status.";
+                    console.error('Error:', error);
+                });
+        };
+
+        // Toggle VPN when the button is clicked
+        toggleButton.addEventListener('click', () => {
+            const isVPNOn = toggleButton.textContent === "Turn VPN OFF";
+            // Show activating/deactivating message
+            statusText.textContent = isVPNOn ? "Deactivating..." : "Activating...";
+            toggleButton.disabled = true;  // Disable the button while waiting
+
+            fetch('/toggle-vpn', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                updateStatus(data.vpnOn);
+                toggleButton.disabled = false;  // Re-enable the button after response
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                statusText.textContent = "Error: Could not toggle VPN.";
+                toggleButton.disabled = false;  // Re-enable the button even on error
+            });
+        });
+
+        // Function to update the status and button text
+        function updateStatus(vpnOn) {
+            if (vpnOn) {
+                statusText.textContent = "VPN is ON";
+                indicator.classList.add('vpn-on');
+                indicator.classList.remove('vpn-off');
+                toggleButton.textContent = "Turn VPN OFF";
+            } else {
+                statusText.textContent = "VPN is OFF";
+                indicator.classList.add('vpn-off');
+                indicator.classList.remove('vpn-on');
+                toggleButton.textContent = "Turn VPN ON";
+            }
+        }
+    </script>
+
+</body>
+</html>
+

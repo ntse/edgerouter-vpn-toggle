@@ -1,0 +1,16 @@
+[Unit]
+Description=Unicorn Daemon for VPN 
+After=network.target
+
+[Service]
+User=ntse
+Group=www-data
+WorkingDirectory=/home/ntse/vpn
+ExecStart=/home/ntse/vpn/venv/bin/gunicorn --error-logfile /var/log/gunicorn/error.log --access-logfile /var/log/gunicorn/access.log --capture-output --workers 2 --bind unix:/tmp/vpn.sock app:app
+Environment="PATH=/home/ntse/vpn/venv/bin:$PATH"
+Environment="LD_LIBRARY_PATH=/home/ntse/opt/lib:$LD_LIBRARY_PATH"
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s TERM $MAINPID
+
+[Install]
+WantedBy=multi-user.target
